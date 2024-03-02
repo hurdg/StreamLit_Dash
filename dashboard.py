@@ -77,11 +77,14 @@ fin_tag = min(fin_tags, key=len)
 inc_tags = df['tag'][df['tag'].str.contains('netincome', case = False)].unique()
 inc_tag = min(inc_tags, key=len)
 
+#Clean up df
+df[["start", 'end']] = df[["start", 'end']].apply(pd.to_datetime, errors='coerce', utc=False)
+df = df[df['frame'].notna() & df['frame'].notnull()]
+df.sort_values(by='end', inplace = True) 
+df.reset_index(inplace = True)
+
 #Subset by desired data
 df_inventory = df[df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start','end','val','tag', 'frame']]
-df_inventory[["start", 'end']] = df_inventory[["start", 'end']].apply(pd.to_datetime, errors='coerce')
-df_inventory = df_inventory[df_inventory['frame'].notna() & df_inventory['frame'].notnull()]
-df_inventory.sort_values(by='end', inplace = True) 
 df_inventory.reset_index(inplace = True)
 
 #Calculate 4th quarter data
@@ -109,62 +112,89 @@ hist.reset_index(inplace = True)
 hist["Date"] = hist["Date"].dt.tz_localize(tz = None)
 hist = hist[hist["Date"] > (min(df_inventory['start']))]
 
+row = st.columns((1, 4), gap='medium')
+with row[1]:
+    #Create Figure
+    #######################
+    fig = go.Figure()
+    fig = pls.make_subplots(rows=1, cols=1,
+                            specs=[[{"secondary_y": True}]])
 
-#Create Figure
-#######################
-fig = go.Figure()
-fig = pls.make_subplots(rows=1, cols=1,
-                        specs=[[{"secondary_y": True}]])
+    fig.add_trace(go.Line(
+        x = hist['Date'],
+        y = hist['Close'],
+        legendgroup="group", 
+        legendgrouptitle_text="method one",
+        line=dict(color='white', width = 0.1),
+        name="Stock Price"
+    ), row=1, col=1, secondary_y=True)
 
-fig.add_trace(go.Line(
-    x = hist['Date'],
-    y = hist['Close'],
-    legendgroup="group", 
-    legendgrouptitle_text="method one",
-    line=dict(color='white', width = 0.1),
-    name="Stock Price"
-), row=1, col=1, secondary_y=True)
+    fig.add_trace(go.Bar(
+        x = df_inventory['end'][df_inventory['tag']==raw_tag],
+        y = df_inventory['val'][df_inventory['tag']==raw_tag],
+        legendgroup="group",
+        marker=dict(color='forestgreen'),
+        legendgrouptitle_text="method one",
+        name="Raw Materials"
+    ), row=1, col=1, secondary_y=False)
 
-fig.add_trace(go.Bar(
-    x = df_inventory['end'][df_inventory['tag']==raw_tag],
-    y = df_inventory['val'][df_inventory['tag']==raw_tag],
-    legendgroup="group",
-    marker=dict(color='forestgreen'),
-    legendgrouptitle_text="method one",
-    name="Raw Materials"
-), row=1, col=1, secondary_y=False)
+    fig.add_trace(go.Bar(
+        x = df_inventory['end'][df_inventory['tag']==wip_tag],
+        y = df_inventory['val'][df_inventory['tag']==wip_tag],
+        legendgroup="group", 
+        legendgrouptitle_text="method one",
+        marker=dict(color='goldenrod'),
+        name="Work In Process"
+    ), row=1, col=1, secondary_y=False)
 
-fig.add_trace(go.Bar(
-    x = df_inventory['end'][df_inventory['tag']==wip_tag],
-    y = df_inventory['val'][df_inventory['tag']==wip_tag],
-    legendgroup="group", 
-    legendgrouptitle_text="method one",
-    marker=dict(color='goldenrod'),
-    name="Work In Process"
-), row=1, col=1, secondary_y=False)
+    fig.add_trace(go.Bar(
+        x = df_inventory['end'][df_inventory['tag']==fin_tag],
+        y = df_inventory['val'][df_inventory['tag']==fin_tag],
+        legendgroup="group", 
+        legendgrouptitle_text="method one",
+        marker=dict(color='darkred'),
+        name="Finished Goods"
+    ), row=1, col=1, secondary_y=False)
 
-fig.add_trace(go.Bar(
-    x = df_inventory['end'][df_inventory['tag']==fin_tag],
-    y = df_inventory['val'][df_inventory['tag']==fin_tag],
-    legendgroup="group", 
-    legendgrouptitle_text="method one",
-    marker=dict(color='darkred'),
-    name="Finished Goods"
-), row=1, col=1, secondary_y=False)
+    fig.add_trace(go.Line(
+        x = df_inventory['end'][df_inventory['tag']=='NetIncomeLoss'],
+        y = df_inventory['val'][df_inventory['tag']=='NetIncomeLoss']/10,
+        legendgroup="group", 
+        legendgrouptitle_text="method one",
+        marker=dict(color='darkblue'),
+        name="Net Income"
+    ), row=1, col=1, secondary_y=False)
 
-fig.add_trace(go.Line(
-    x = df_inventory['end'][df_inventory['tag']=='NetIncomeLoss'],
-    y = df_inventory['val'][df_inventory['tag']=='NetIncomeLoss']/10,
-    legendgroup="group", 
-    legendgrouptitle_text="method one",
-    marker=dict(color='darkblue'),
-    name="Net Income"
-), row=1, col=1, secondary_y=False)
-
-fig.update_layout(barmode='group', margin={"r": 0, "t": 0, "l": 0, "b": 0}, 
-                  bargroupgap=0.1, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True,
-                  legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.01))
+    fig.update_layout(barmode='group', margin={"r": 0, "t": 0, "l": 0, "b": 0}, 
+                    bargroupgap=0.1, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True,
+                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.01))
 
 
-st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
+
+with row[0]:
+    newest_annual_dates = pd.Series.nlargest((df['end'][df['tag']==inc_tag]),4)
+    newest_profit = df['val'][(df['tag']==inc_tag) & (df['end'].isin(newest_annual_dates))]
+    newest_sharesoutstanding = df['val'][(df['tag']=='CommonStockSharesOutstanding') & (df['end']== max(newest_annual_dates))]
+    newest_profitpershare = newest_profit.sum()/newest_sharesoutstanding.mean()
+    newest_price = hist['Close'][hist["Date"]==max(hist["Date"])]
+    pe = round((newest_price/newest_profitpershare).mean(),2)
+    labels = ["Price per Share", "Earnings per Share"]
+    values = [round(newest_price.mean(),2), round(newest_profitpershare.mean(),2)]
+
+    # Create subplots: use 'domain' type for Pie subplot
+    fig = pls.make_subplots(rows=1, cols=1, specs=[[{'type':'domain'}]])
+    fig.add_trace(go.Pie(labels=labels, values=values, title=f"P/E <br> <b>{pe}</b>", 
+                        title_font=dict(size=20, color = "white", family='Arial, sans-serif'),
+                        marker=dict(colors=['darkred', 'red'], line=dict(color='#000000', width=2))), 
+                    row=1, col=1) 
+
+    # Use `hole` to create a donut-like pie chart
+    fig.update_traces(hole=.4, hoverinfo="label+value+name")
+
+    fig.update_layout(
+        title_text="",
+        showlegend=False,
+        margin={"r": 0, "t": 0, "l": 0, "b": 0}, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True)
+    st.plotly_chart(fig, use_container_width=True)
 #######################
