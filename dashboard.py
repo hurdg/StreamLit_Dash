@@ -29,6 +29,7 @@ selected_ticker = st.sidebar.selectbox('Ticker', options = tickers_cik['ticker']
 cik_str = tickers_cik['cik_str'][tickers_cik['ticker'] == selected_ticker].values[0]
 
 #Company data
+@st.cache_data  # 👈 Add the caching decorator
 def EDGAR_query(cik:str, header:dict, tag:list=None)->pd.DataFrame:
     url = 'https://data.sec.gov/api/xbrl/companyfacts/CIK'+cik+'.json'
     response = requests.get(url, headers=header)
@@ -61,7 +62,7 @@ data_load_state = st.text('Loading data...')
 df = EDGAR_query(cik_str, header = header)
 
 # Notify the reader that the data was successfully loaded.
-data_load_state.text('Loading data...done!')
+data_load_state.text('')
 
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
 raw_tags = df['tag'][df['tag'].str.contains('rawmaterials', case = False)].unique()
@@ -161,7 +162,9 @@ fig.add_trace(go.Line(
 ), row=1, col=1, secondary_y=False)
 
 fig.update_layout(barmode='group', margin={"r": 0, "t": 0, "l": 0, "b": 0}, 
-                  bargroupgap=0.1, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True )
+                  bargroupgap=0.1, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True,
+                  legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.01))
+
 
 st.plotly_chart(fig, use_container_width=True)
 #######################
