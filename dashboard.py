@@ -160,7 +160,8 @@ fig.add_trace(go.Line(
     name="Net Income"
 ), row=1, col=1, secondary_y=False)
 
-fig.update_layout(barmode='group', bargroupgap=0.1, plot_bgcolor='rgb(0,0,0)', paper_bgcolor='rgb(0,0,0)', autosize = True )
+fig.update_layout(barmode='group', margin={"r": 0, "t": 0, "l": 0, "b": 0}, 
+                  bargroupgap=0.1, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True )
 
-st.plotly_chart(fig)
+st.plotly_chart(fig, use_container_width=True)
 #######################
