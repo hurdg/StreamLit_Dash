@@ -112,6 +112,6 @@ fig.add_trace(go.Line(
     name="Net Income"
 ), row=1, col=1)
 
-fig.update_layout(barmode='group', bargroupgap=0.01)
+fig.update_layout(barmode='group', bargroupgap=0.1, plot_bgcolor='rgb(0,0,0)',paper_bgcolor='rgb(0,0,0)' )
 
 st.plotly_chart(fig)
