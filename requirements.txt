@@ -1,0 +1,5 @@
+pandas
+secedgar
+plotly
+streamlit
+altair
