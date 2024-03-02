@@ -3,3 +3,5 @@ secedgar
 plotly
 streamlit
 altair
+datetime
+yfinance

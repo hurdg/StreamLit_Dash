@@ -3,12 +3,12 @@ import json
 import pandas as pd
 from secedgar import CompanyFilings, FilingType
 import streamlit as st
-import plotly.express as px
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.subplots as pls
 import altair as alt
 import datetime as dt
+import yfinance as yf
 
 
 st.set_page_config(
@@ -55,8 +55,13 @@ def EDGAR_query(cik:str, header:dict, tag:list=None)->pd.DataFrame:
     except:print('company data not found')
     return company_data
 
+# Create a text element and let the reader know the data is loading.
+data_load_state = st.text('Loading data...')
+
 df = EDGAR_query(cik_str, header = header)
 
+# Notify the reader that the data was successfully loaded.
+data_load_state.text('Loading data...done!')
 
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
 raw_tags = df['tag'][df['tag'].str.contains('rawmaterials', case = False)].unique()
@@ -72,7 +77,7 @@ inc_tags = df['tag'][df['tag'].str.contains('netincome', case = False)].unique()
 inc_tag = min(inc_tags, key=len)
 
 #Subset by desired data
-df_inventory = df[df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start','end','val','tag']]
+df_inventory = df[df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start','end','val','tag', 'frame']]
 df_inventory[["start", 'end']] = df_inventory[["start", 'end']].apply(pd.to_datetime, errors='coerce')
 df_inventory = df_inventory[df_inventory['frame'].notna() & df_inventory['frame'].notnull()]
 df_inventory.sort_values(by='end', inplace = True) 
@@ -95,48 +100,67 @@ for i in inc_index[annual_index]:
     new_val = k_val - sum(quartervals)
     df_inventory['val'].iloc[i] = new_val
 
+
+# get historical stock price data
+df_hist = yf.Ticker(selected_ticker)
+hist = df_hist.history(period="max")
+hist.reset_index(inplace = True)
+hist["Date"] = hist["Date"].dt.tz_localize(tz = None)
+hist = hist[hist["Date"] > (min(df_inventory['start']))]
+
+
 #Create Figure
 #######################
 fig = go.Figure()
-fig = pls.make_subplots(rows=1, cols=1)
+fig = pls.make_subplots(rows=1, cols=1,
+                        specs=[[{"secondary_y": True}]])
+
+fig.add_trace(go.Line(
+    x = hist['Date'],
+    y = hist['Close'],
+    legendgroup="group", 
+    legendgrouptitle_text="method one",
+    line=dict(color='white', width = 0.1),
+    name="Stock Price"
+), row=1, col=1, secondary_y=True)
 
 fig.add_trace(go.Bar(
-    x = df_inventory['date'][df_inventory['tag']==raw_tag],
+    x = df_inventory['end'][df_inventory['tag']==raw_tag],
     y = df_inventory['val'][df_inventory['tag']==raw_tag],
     legendgroup="group",
     marker=dict(color='forestgreen'),
     legendgrouptitle_text="method one",
     name="Raw Materials"
-), row=1, col=1)
+), row=1, col=1, secondary_y=False)
 
 fig.add_trace(go.Bar(
-    x = df_inventory['date'][df_inventory['tag']==wip_tag],
+    x = df_inventory['end'][df_inventory['tag']==wip_tag],
     y = df_inventory['val'][df_inventory['tag']==wip_tag],
     legendgroup="group", 
     legendgrouptitle_text="method one",
     marker=dict(color='goldenrod'),
     name="Work In Process"
-), row=1, col=1)
+), row=1, col=1, secondary_y=False)
 
 fig.add_trace(go.Bar(
-    x = df_inventory['date'][df_inventory['tag']==fin_tag],
+    x = df_inventory['end'][df_inventory['tag']==fin_tag],
     y = df_inventory['val'][df_inventory['tag']==fin_tag],
     legendgroup="group", 
     legendgrouptitle_text="method one",
     marker=dict(color='darkred'),
     name="Finished Goods"
-), row=1, col=1)
+), row=1, col=1, secondary_y=False)
 
 fig.add_trace(go.Line(
-    x = df_inventory['date'][df_inventory['tag']=='NetIncomeLoss'],
+    x = df_inventory['end'][df_inventory['tag']=='NetIncomeLoss'],
     y = df_inventory['val'][df_inventory['tag']=='NetIncomeLoss']/10,
     legendgroup="group", 
     legendgrouptitle_text="method one",
     marker=dict(color='darkblue'),
     name="Net Income"
-), row=1, col=1)
+), row=1, col=1, secondary_y=False)
 
-fig.update_layout(barmode='group', bargroupgap=0.1, plot_bgcolor='rgb(0,0,0)',paper_bgcolor='rgb(0,0,0)' )
+fig.update_layout(barmode='group', bargroupgap=0.1, plot_bgcolor='rgb(0,0,0)', paper_bgcolor='rgb(0,0,0)', autosize = True )
 
 st.plotly_chart(fig)
 #######################
