@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.subplots as pls
 import altair as alt
+import datetime as dt
 
 
 st.set_page_config(
@@ -55,24 +56,47 @@ def EDGAR_query(cik:str, header:dict, tag:list=None)->pd.DataFrame:
     return company_data
 
 df = EDGAR_query(cik_str, header = header)
-df.rename(columns = {'end' : 'date'}, inplace = True)
 
-#Subset by desired data
-df_inventory = df[df['tag'].str.contains('inventory|netincome', case = False)]
-df_inventory["date"] = pd.to_datetime(df_inventory["date"])
-df_inventory['tag'].unique()
 
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
-raw_tags = df_inventory['tag'][df_inventory['tag'].str.contains('rawmaterials', case = False)].unique()
+raw_tags = df['tag'][df['tag'].str.contains('rawmaterials', case = False)].unique()
 raw_tag = min(raw_tags, key=len)
 
-wip_tags = df_inventory['tag'][df_inventory['tag'].str.contains('workinprocess', case = False)].unique()
+wip_tags = df['tag'][df['tag'].str.contains('workinprocess', case = False)].unique()
 wip_tag = min(wip_tags, key=len)
 
-fin_tags = df_inventory['tag'][df_inventory['tag'].str.contains('FinishedGoods', case = False)].unique()
+fin_tags = df['tag'][df['tag'].str.contains('FinishedGoods', case = False)].unique()
 fin_tag = min(fin_tags, key=len)
 
+inc_tags = df_inventory['tag'][df_inventory['tag'].str.contains('netincome', case = False)].unique()
+inc_tag = min(inc_tags, key=len)
 
+#Subset by desired data
+df_inventory = df[df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start','end','val','tag']]
+df_inventory[["start", 'end']] = df_inventory[["start", 'end']].apply(pd.to_datetime, errors='coerce')
+df_inventory = df_inventory[df_inventory['frame'].notna() & df_inventory['frame'].notnull()]
+df_inventory.sort_values(by='end', inplace = True) 
+df_inventory.reset_index(inplace = True)
+
+#Calculate 4th quarter data
+inc_index = df_inventory[df_inventory['tag'] == inc_tag].index
+delta = df_inventory.iloc[inc_index]['end'] - df_inventory.iloc[inc_index]['start']
+annual_index = delta > dt.timedelta(345)
+
+for i in inc_index[annual_index]:
+    infile =  df_inventory.iloc[i]
+    k_val = infile['val']
+    k_enddate = infile['end']
+    k_startdate = infile['start']
+
+    quartervals = (df_inventory['val'].iloc[inc_index][(df_inventory['start'] >= k_startdate) & #Within time period defined by 10-k 
+                                                         (df_inventory['end'] <= k_enddate) &
+                                                         ((df_inventory['end'] - df_inventory['start']) < dt.timedelta(200))]) #Exclude the 10-k vlaue
+    new_val = k_val - sum(quartervals)
+    df_inventory['val'].iloc[i] = new_val
+
+#Create Figure
+#######################
 fig = go.Figure()
 fig = pls.make_subplots(rows=1, cols=1)
 
@@ -115,3 +139,4 @@ fig.add_trace(go.Line(
 fig.update_layout(barmode='group', bargroupgap=0.1, plot_bgcolor='rgb(0,0,0)',paper_bgcolor='rgb(0,0,0)' )
 
 st.plotly_chart(fig)
+#######################
