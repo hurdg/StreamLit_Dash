@@ -68,7 +68,7 @@ wip_tag = min(wip_tags, key=len)
 fin_tags = df['tag'][df['tag'].str.contains('FinishedGoods', case = False)].unique()
 fin_tag = min(fin_tags, key=len)
 
-inc_tags = df_inventory['tag'][df_inventory['tag'].str.contains('netincome', case = False)].unique()
+inc_tags = df['tag'][df['tag'].str.contains('netincome', case = False)].unique()
 inc_tag = min(inc_tags, key=len)
 
 #Subset by desired data
