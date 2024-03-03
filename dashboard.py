@@ -123,8 +123,8 @@ with row[1]:
     fig.add_trace(go.Line(
         x = hist['Date'],
         y = hist['Close'],
-        legendgroup="group", 
-        legendgrouptitle_text="method one",
+        #legendgroup="group", 
+        #legendgrouptitle_text="method one",
         line=dict(color='white', width = 0.1),
         name="Stock Price"
     ), row=1, col=1, secondary_y=True)
@@ -132,17 +132,17 @@ with row[1]:
     fig.add_trace(go.Bar(
         x = df_inventory['end'][df_inventory['tag']==raw_tag],
         y = df_inventory['val'][df_inventory['tag']==raw_tag],
-        legendgroup="group",
+        #legendgroup="group",
         marker=dict(color='forestgreen'),
-        legendgrouptitle_text="method one",
+        #legendgrouptitle_text="method one",
         name="Raw Materials"
     ), row=1, col=1, secondary_y=False)
 
     fig.add_trace(go.Bar(
         x = df_inventory['end'][df_inventory['tag']==wip_tag],
         y = df_inventory['val'][df_inventory['tag']==wip_tag],
-        legendgroup="group", 
-        legendgrouptitle_text="method one",
+        #legendgroup="group", 
+        #legendgrouptitle_text="method one",
         marker=dict(color='goldenrod'),
         name="Work In Process"
     ), row=1, col=1, secondary_y=False)
@@ -150,8 +150,8 @@ with row[1]:
     fig.add_trace(go.Bar(
         x = df_inventory['end'][df_inventory['tag']==fin_tag],
         y = df_inventory['val'][df_inventory['tag']==fin_tag],
-        legendgroup="group", 
-        legendgrouptitle_text="method one",
+        #legendgroup="group", 
+        #legendgrouptitle_text="method one",
         marker=dict(color='darkred'),
         name="Finished Goods"
     ), row=1, col=1, secondary_y=False)
@@ -159,38 +159,71 @@ with row[1]:
     fig.add_trace(go.Line(
         x = df_inventory['end'][df_inventory['tag']=='NetIncomeLoss'],
         y = df_inventory['val'][df_inventory['tag']=='NetIncomeLoss']/10,
-        legendgroup="group", 
-        legendgrouptitle_text="method one",
+        #legendgroup="group", 
+        #legendgrouptitle_text="method one",
         marker=dict(color='darkblue'),
         name="Net Income"
     ), row=1, col=1, secondary_y=False)
 
     fig.update_layout(barmode='group', margin={"r": 0, "t": 0, "l": 0, "b": 0}, 
                     bargroupgap=0.1, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True,
-                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.01))
+                    legend=dict(orientation="h", yanchor="top",y=0.99,xanchor="left",x=0.01))
 
 
     st.plotly_chart(fig, use_container_width=True)
 
+###############################################
+newest_annual_dates = pd.Series.nlargest((df['end'][df['tag']==inc_tag]),4)
+newest_profit = df['val'][(df['tag']==inc_tag) & (df['end'].isin(newest_annual_dates))]
+newest_sharesoutstanding = df['val'][(df['tag']=='CommonStockSharesOutstanding') & (df['end']== max(newest_annual_dates))]
+newest_profitpershare = newest_profit.sum()/newest_sharesoutstanding.mean()
+newest_price = hist['Close'][hist["Date"]==max(hist["Date"])]
+pe = round((newest_price/newest_profitpershare).mean(),2)
+
+dates = df['end'].unique()
+
+pe_list = []
+date_list = []
+for i in range(3,len(dates)):
+    #Chunk data quarterly
+    quarterly_prices = hist['Close'][(hist['Date'] > dates[i-1]) & (hist['Date'] < dates[i])]
+
+    annualized_earning = df['val'][(df['tag']==inc_tag) & (df['end']< dates[i-1]) & (df['end']<dates[i-1]-dt.timedelta(360))].mean()*4
+    quarterly_shares = df['val'][(df['tag']=='CommonStockSharesOutstanding') & (df['end']<dates[i-1]) & (df['end']<dates[i-1]-dt.timedelta(360))].max()
+    quartely_earningspershare = annualized_earning/quarterly_shares
+    quarterly_pe = quarterly_prices/quartely_earningspershare
+
+    quarterly_dates = hist['Date'][(hist['Date'] > dates[i-1]) & (hist['Date'] < dates[i])]
+    pe_list.append(quarterly_pe)
+    date_list.append(quarterly_dates)
+
+
+def flatten(xss):
+    return [x for xs in xss for x in xs]
+
+pe_df = pd.DataFrame({'date' : flatten(date_list),
+              'pe' : flatten(pe_list)})
+
+
 with row[0]:
-    newest_annual_dates = pd.Series.nlargest((df['end'][df['tag']==inc_tag]),4)
-    newest_profit = df['val'][(df['tag']==inc_tag) & (df['end'].isin(newest_annual_dates))]
-    newest_sharesoutstanding = df['val'][(df['tag']=='CommonStockSharesOutstanding') & (df['end']== max(newest_annual_dates))]
-    newest_profitpershare = newest_profit.sum()/newest_sharesoutstanding.mean()
-    newest_price = hist['Close'][hist["Date"]==max(hist["Date"])]
-    pe = round((newest_price/newest_profitpershare).mean(),2)
     labels = ["Price per Share", "Earnings per Share"]
     values = [round(newest_price.mean(),2), round(newest_profitpershare.mean(),2)]
 
     # Create subplots: use 'domain' type for Pie subplot
-    fig = pls.make_subplots(rows=1, cols=1, specs=[[{'type':'domain'}]])
+    fig = pls.make_subplots(rows=2, cols=1, specs=[[{'type':'domain'}],[{'type':'xy'}]], row_width=[0.3, 0.7])
     fig.add_trace(go.Pie(labels=labels, values=values, title=f"P/E <br> <b>{pe}</b>", 
                         title_font=dict(size=20, color = "white", family='Arial, sans-serif'),
+                        hole=.4, hoverinfo="label+value+name",
                         marker=dict(colors=['darkred', 'red'], line=dict(color='#000000', width=2))), 
                     row=1, col=1) 
 
-    # Use `hole` to create a donut-like pie chart
-    fig.update_traces(hole=.4, hoverinfo="label+value+name")
+
+    fig.add_trace(go.Line(
+        x = pe_df['date'],
+        y = pe_df['pe'],
+        marker=dict(color='darkblue'),
+        name="Net Income"
+    ), row=2, col=1)
 
     fig.update_layout(
         title_text="",
