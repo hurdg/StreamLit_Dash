@@ -25,20 +25,21 @@ tickers_cik['cik_str']=tickers_cik['cik_str'].astype(str).str.zfill(10)
 
 #Company Dropdown
 selected_title = st.sidebar.selectbox('Ticker', options = tickers_cik['title'])
-
-
 cik_str = tickers_cik['cik_str'][tickers_cik['title'] == selected_title].values[0]
 selected_ticker = tickers_cik['ticker'][tickers_cik['title'] == selected_title].values[0]
 
-st.header(f"{selected_ticker}: {selected_title}", divider = True)
+#Page title
+st.header(f"{selected_ticker}: _{selected_title}_", divider = True)
 
-# Create a text element and let the reader know the data is loading.
-data_load_state = st.text('Loading data...')
 
+#Split dashboard into two columns
+row = st.columns((1, 4), gap='medium')
+with row[1]:
+    st.subheader('Inventory Analysis', divider = False)
+
+#Load data of selected company
 df = EDGAR_query(cik_str, header = header)
 
-# Notify the reader that the data was successfully loaded.
-data_load_state.text('')
 
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
 #Function in edgar_functions file
