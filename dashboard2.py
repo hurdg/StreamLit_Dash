@@ -13,7 +13,7 @@ from edgar_functions import (EDGAR_query, get_inventory_tags, get_quarter4th_dat
 
 
 st.set_page_config(
-    page_title="My First Dashboard",
+    page_title="Ticker Trends",
     page_icon="🏂",
     layout="wide",
     initial_sidebar_state="expanded")
@@ -26,9 +26,11 @@ tickers_cik = pd.json_normalize(pd.json_normalize(tickers_cik.json(), max_level=
 tickers_cik['cik_str']=tickers_cik['cik_str'].astype(str).str.zfill(10)
 
 
-selected_ticker = st.sidebar.selectbox('Ticker', options = tickers_cik['ticker'])
-cik_str = tickers_cik['cik_str'][tickers_cik['ticker'] == selected_ticker].values[0]
+selected_title = st.sidebar.selectbox('Ticker', options = tickers_cik['title'])
+cik_str = tickers_cik['cik_str'][tickers_cik['title'] == selected_title].values[0]
+selected_ticker = tickers_cik['ticker'][tickers_cik['title'] == selected_title].values[0]
 
+st.header(f"{selected_ticker}: {selected_title}", divider = True)
 
 # Create a text element and let the reader know the data is loading.
 data_load_state = st.text('Loading data...')
