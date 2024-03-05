@@ -10,7 +10,7 @@ import datetime as dt
 import yfinance as yf
 
 from edgar_functions import (EDGAR_query, get_inventory_tags, get_quarter4th_data)
-
+from inventory_plot import create_inventory_chart
 
 st.set_page_config(
     page_title="Ticker Trends",
@@ -18,15 +18,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded")
 
-alt.themes.enable("dark")
-
 header = {'User-Agent':'gavinhurd11@gmail.com'}
 tickers_cik = requests.get('https://www.sec.gov/files/company_tickers.json', headers = header)
 tickers_cik = pd.json_normalize(pd.json_normalize(tickers_cik.json(), max_level=0).values[0])
 tickers_cik['cik_str']=tickers_cik['cik_str'].astype(str).str.zfill(10)
 
-
+#Company Dropdown
 selected_title = st.sidebar.selectbox('Ticker', options = tickers_cik['title'])
+
+
 cik_str = tickers_cik['cik_str'][tickers_cik['title'] == selected_title].values[0]
 selected_ticker = tickers_cik['ticker'][tickers_cik['title'] == selected_title].values[0]
 
@@ -65,64 +65,14 @@ hist.reset_index(inplace = True)
 hist["Date"] = hist["Date"].dt.tz_localize(tz = None)
 hist = hist[hist["Date"] > (min(df_inventory['start']))]
 
+#Split dashboard into two columns
 row = st.columns((1, 4), gap='medium')
+
+#Plot for column 1
 with row[1]:
     #Create Figure
     #######################
-    fig = go.Figure()
-    fig = pls.make_subplots(rows=1, cols=1,
-                            specs=[[{"secondary_y": True}]])
-
-    fig.add_trace(go.Line(
-        x = hist['Date'],
-        y = hist['Close'],
-        #legendgroup="group", 
-        #legendgrouptitle_text="method one",
-        line=dict(color='white', width = 0.1),
-        name="Stock Price"
-    ), row=1, col=1, secondary_y=True)
-
-    fig.add_trace(go.Bar(
-        x = df_inventory['end'][df_inventory['tag']==raw_tag],
-        y = df_inventory['val'][df_inventory['tag']==raw_tag],
-        #legendgroup="group",
-        marker=dict(color='forestgreen'),
-        #legendgrouptitle_text="method one",
-        name="Raw Materials"
-    ), row=1, col=1, secondary_y=False)
-
-    fig.add_trace(go.Bar(
-        x = df_inventory['end'][df_inventory['tag']==wip_tag],
-        y = df_inventory['val'][df_inventory['tag']==wip_tag],
-        #legendgroup="group", 
-        #legendgrouptitle_text="method one",
-        marker=dict(color='goldenrod'),
-        name="Work In Process"
-    ), row=1, col=1, secondary_y=False)
-
-    fig.add_trace(go.Bar(
-        x = df_inventory['end'][df_inventory['tag']==fin_tag],
-        y = df_inventory['val'][df_inventory['tag']==fin_tag],
-        #legendgroup="group", 
-        #legendgrouptitle_text="method one",
-        marker=dict(color='darkred'),
-        name="Finished Goods"
-    ), row=1, col=1, secondary_y=False)
-
-    fig.add_trace(go.Line(
-        x = df_inventory['end'][df_inventory['tag']=='NetIncomeLoss'],
-        y = df_inventory['val'][df_inventory['tag']=='NetIncomeLoss']/10,
-        #legendgroup="group", 
-        #legendgrouptitle_text="method one",
-        marker=dict(color='darkblue'),
-        name="Net Income"
-    ), row=1, col=1, secondary_y=False)
-
-    fig.update_layout(barmode='group', margin={"r": 0, "t": 0, "l": 0, "b": 0}, 
-                    bargroupgap=0.1, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True,
-                    legend=dict(orientation="h", yanchor="top",y=0.99,xanchor="left",x=0.01))
-
-
+    fig = create_inventory_chart(df_inventory, hist)
     st.plotly_chart(fig, use_container_width=True)
 
 ###############################################
