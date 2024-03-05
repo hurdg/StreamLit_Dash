@@ -1,7 +1,6 @@
 import requests
 import json
 import pandas as pd
-from secedgar import CompanyFilings, FilingType
 import streamlit as st
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -9,6 +8,8 @@ import plotly.subplots as pls
 import altair as alt
 import datetime as dt
 import yfinance as yf
+
+from edgar_functions import (EDGAR_query, get_inventory_tags, get_quarter4th_data)
 
 
 st.set_page_config(
@@ -28,33 +29,6 @@ tickers_cik['cik_str']=tickers_cik['cik_str'].astype(str).str.zfill(10)
 selected_ticker = st.sidebar.selectbox('Ticker', options = tickers_cik['ticker'])
 cik_str = tickers_cik['cik_str'][tickers_cik['ticker'] == selected_ticker].values[0]
 
-#Company data
-@st.cache_data  # 👈 Add the caching decorator
-def EDGAR_query(cik:str, header:dict, tag:list=None)->pd.DataFrame:
-    url = 'https://data.sec.gov/api/xbrl/companyfacts/CIK'+cik+'.json'
-    response = requests.get(url, headers=header)
-
-    try:
-        if tag == None:
-            tags = list(response.json()['facts']['us-gaap'].keys())
-        else:
-            tags=tag
-        
-        company_data = pd.DataFrame()
-
-
-        for i in range(len(tags)):
-            try:
-                tag = tags[i]
-                units = list(response.json()['facts']['us-gaap'][tag]['units'].keys())[0]
-                data = pd.json_normalize(response.json()['facts']['us-gaap'][tag]['units'][units])
-                data['tag']=tag
-                data['units']=units
-                company_data = pd.concat([company_data, data], ignore_index=True)
-            except:
-                print(tag+'not found')
-    except:print('company data not found')
-    return company_data
 
 # Create a text element and let the reader know the data is loading.
 data_load_state = st.text('Loading data...')
@@ -65,17 +39,8 @@ df = EDGAR_query(cik_str, header = header)
 data_load_state.text('')
 
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
-raw_tags = df['tag'][df['tag'].str.contains('rawmaterials', case = False)].unique()
-raw_tag = min(raw_tags, key=len)
-
-wip_tags = df['tag'][df['tag'].str.contains('workinprocess', case = False)].unique()
-wip_tag = min(wip_tags, key=len)
-
-fin_tags = df['tag'][df['tag'].str.contains('FinishedGoods', case = False)].unique()
-fin_tag = min(fin_tags, key=len)
-
-inc_tags = df['tag'][df['tag'].str.contains('netincome', case = False)].unique()
-inc_tag = min(inc_tags, key=len)
+#Function in edgar_functions file
+raw_tag, wip_tag, fin_tag, inc_tag = get_inventory_tags(df['tag'])
 
 #Clean up df
 df[["start", 'end']] = df[["start", 'end']].apply(pd.to_datetime, errors='coerce', utc=False)
@@ -88,21 +53,7 @@ df_inventory = df[df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start'
 df_inventory.reset_index(inplace = True)
 
 #Calculate 4th quarter data
-inc_index = df_inventory[df_inventory['tag'] == inc_tag].index
-delta = df_inventory.iloc[inc_index]['end'] - df_inventory.iloc[inc_index]['start']
-annual_index = delta > dt.timedelta(345)
-
-for i in inc_index[annual_index]:
-    infile =  df_inventory.iloc[i]
-    k_val = infile['val']
-    k_enddate = infile['end']
-    k_startdate = infile['start']
-
-    quartervals = (df_inventory['val'].iloc[inc_index][(df_inventory['start'] >= k_startdate) & #Within time period defined by 10-k 
-                                                         (df_inventory['end'] <= k_enddate) &
-                                                         ((df_inventory['end'] - df_inventory['start']) < dt.timedelta(200))]) #Exclude the 10-k vlaue
-    new_val = k_val - sum(quartervals)
-    df_inventory['val'].iloc[i] = new_val
+df_inventory = get_quarter4th_data(df_inventory, inc_tag)
 
 
 # get historical stock price data
