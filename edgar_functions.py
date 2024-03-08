@@ -46,12 +46,17 @@ def get_wip_tag(tags:list=None):
 def get_fg_tag(tags:list=None):
     fg_tags = tags[tags.str.contains('FinishedGoods', case = False)].unique()
     fg_tag = min(fg_tags, key=len)
-    return(fg)
+    return(fg_tag)
 
 def get_inc_tag(tags:list=None):
     inc_tags = tags[tags.str.contains('netincome', case = False)].unique()
     inc_tag = min(inc_tags, key=len)
     return(inc_tag)
+
+def EDGAR_gettag(tag:str, tags:list=None):
+    all_matching_tags = tags[tags.str.contains(tag, case = False)].unique()
+    min_tag = min(all_matching_tags, key=len)
+    return(min_tag)
 
 
 #Calculate 4th quarter data

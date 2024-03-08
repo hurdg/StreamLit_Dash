@@ -9,7 +9,7 @@ import altair as alt
 import datetime as dt
 import yfinance as yf
 
-from EDGAR_functions import (EDGAR_query, get_inventory_tags, get_quarter4th_data)
+import EDGAR_functions as ED
 from inventory_plot import create_inventory_chart
 
 st.set_page_config(
@@ -38,7 +38,7 @@ with row[1]:
     st.subheader('Inventory Analysis', divider = False)
 
 #Load data of selected company
-df = EDGAR_query(cik_str, header = header)
+df = ED.EDGAR_query(cik_str, header = header)
 
 
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
