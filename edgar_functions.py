@@ -33,19 +33,25 @@ def EDGAR_query(cik:str, header:dict, tag:list=None)->pd.DataFrame:
 
 
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
-def get_inventory_tags(tags:list=None):
+def get_raw_tag(tags:list=None):
     raw_tags = tags[tags.str.contains('rawmaterials', case = False)].unique()
     raw_tag = min(raw_tags, key=len)
+    return(raw_tag)
 
+def get_wip_tag(tags:list=None):
     wip_tags = tags[tags.str.contains('workinprocess', case = False)].unique()
     wip_tag = min(wip_tags, key=len)
+    return(wip_tag)
 
-    fin_tags = tags[tags.str.contains('FinishedGoods', case = False)].unique()
-    fin_tag = min(fin_tags, key=len)
+def get_fg_tag(tags:list=None):
+    fg_tags = tags[tags.str.contains('FinishedGoods', case = False)].unique()
+    fg_tag = min(fg_tags, key=len)
+    return(fg)
 
+def get_inc_tag(tags:list=None):
     inc_tags = tags[tags.str.contains('netincome', case = False)].unique()
     inc_tag = min(inc_tags, key=len)
-    return(raw_tag, wip_tag, fin_tag, inc_tag)
+    return(inc_tag)
 
 
 #Calculate 4th quarter data

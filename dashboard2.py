@@ -9,7 +9,7 @@ import altair as alt
 import datetime as dt
 import yfinance as yf
 
-from edgar_functions import (EDGAR_query, get_inventory_tags, get_quarter4th_data)
+from EDGAR_functions import (EDGAR_query, get_inventory_tags, get_quarter4th_data)
 from inventory_plot import create_inventory_chart
 
 st.set_page_config(
