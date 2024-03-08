@@ -32,6 +32,7 @@ def EDGAR_query(cik:str, header:dict, tag:list=None)->pd.DataFrame:
     return company_data
 
 
+
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
 def get_raw_tag(tags:list=None):
     raw_tags = tags[tags.str.contains('rawmaterials', case = False)].unique()
@@ -58,8 +59,6 @@ def EDGAR_gettag(tag:str, tags:list=None):
     min_tag = min(all_matching_tags, key=len)
     return(min_tag)
 
-def EDGAR_print(tag:str):
-    return(tag*2)
 
 
 #Calculate 4th quarter data
