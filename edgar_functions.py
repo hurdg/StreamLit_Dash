@@ -58,6 +58,9 @@ def EDGAR_gettag(tag:str, tags:list=None):
     min_tag = min(all_matching_tags, key=len)
     return(min_tag)
 
+def EDGAR_print(tag:str):
+    return(tag*2)
+
 
 #Calculate 4th quarter data
 def get_quarter4th_data(df, net_income_tag:str):
