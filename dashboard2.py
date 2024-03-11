@@ -9,7 +9,7 @@ import altair as alt
 import datetime as dt
 import yfinance as yf
 
-import EDGAR_functions as ED
+from EDGAR_functions import EDGAR_query, EDGAR_gettag, EDGAR_getq4
 from inventory_plot import create_inventory_chart
 
 st.set_page_config(
@@ -38,12 +38,16 @@ with row[1]:
     st.subheader('Inventory Analysis', divider = False)
 
 #Load data of selected company
-df = ED.EDGAR_query(cik_str, header = header)
+df = EDGAR_query(cik_str, header = header)
 
 
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
 #Function in edgar_functions file
-raw_tag, wip_tag, fin_tag, inc_tag = get_inventory_tags(df['tag'])
+raw_tag = EDGAR_gettag('rawmaterials', df['tag'])
+wip_tag = EDGAR_gettag('workinprocess', df['tag'])
+fin_tag = EDGAR_gettag('FinishedGoods', df['tag'])
+inc_tag = EDGAR_gettag('netincome', df['tag'])
+
 
 #Clean up df
 df[["start", 'end']] = df[["start", 'end']].apply(pd.to_datetime, errors='coerce', utc=False)
@@ -56,7 +60,7 @@ df_inventory = df[df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start'
 df_inventory.reset_index(inplace = True)
 
 #Calculate 4th quarter data
-df_inventory = get_quarter4th_data(df_inventory, inc_tag)
+df_inventory = EDGAR_getq4(df_inventory, inc_tag)
 
 
 # get historical stock price data

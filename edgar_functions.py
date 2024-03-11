@@ -34,35 +34,19 @@ def EDGAR_query(cik:str, header:dict, tag:list=None)->pd.DataFrame:
 
 
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
-def get_raw_tag(tags:list=None):
-    raw_tags = tags[tags.str.contains('rawmaterials', case = False)].unique()
-    raw_tag = min(raw_tags, key=len)
-    return(raw_tag)
-
-def get_wip_tag(tags:list=None):
-    wip_tags = tags[tags.str.contains('workinprocess', case = False)].unique()
-    wip_tag = min(wip_tags, key=len)
-    return(wip_tag)
-
-def get_fg_tag(tags:list=None):
-    fg_tags = tags[tags.str.contains('FinishedGoods', case = False)].unique()
-    fg_tag = min(fg_tags, key=len)
-    return(fg_tag)
-
-def get_inc_tag(tags:list=None):
-    inc_tags = tags[tags.str.contains('netincome', case = False)].unique()
-    inc_tag = min(inc_tags, key=len)
-    return(inc_tag)
-
 def EDGAR_gettag(tag:str, tags:list=None):
-    all_matching_tags = tags[tags.str.contains(tag, case = False)].unique()
-    min_tag = min(all_matching_tags, key=len)
-    return(min_tag)
+    try:
+        all_matching_tags = tags[tags.str.contains(tag, case = False)].unique()
+        min_tag = min(all_matching_tags, key=len)
+        print(f"The selected tag is: {min_tag}.")
+        return(min_tag)
+    except:
+        print(f"No tags contain {tag}.")
 
 
 
 #Calculate 4th quarter data
-def get_quarter4th_data(df, net_income_tag:str):
+def EDGAR_getq4(df, net_income_tag:str):
     inc_index = df[df['tag'] == net_income_tag].index
     delta = df.iloc[inc_index]['end'] - df.iloc[inc_index]['start']
     annual_index = delta > dt.timedelta(345)
