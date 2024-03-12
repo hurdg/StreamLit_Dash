@@ -46,20 +46,21 @@ def EDGAR_gettag(tag:str, tags:list=None):
 
 
 #Calculate 4th quarter data
-def EDGAR_getq4(df, net_income_tag:str):
-    inc_index = df[df['tag'] == net_income_tag].index
-    delta = df.iloc[inc_index]['end'] - df.iloc[inc_index]['start']
-    annual_index = delta > dt.timedelta(345)
-
-    for i in inc_index[annual_index]:
-        infile =  df.iloc[i]
-        k_val = infile['val']
-        k_enddate = infile['end']
-        k_startdate = infile['start']
-
-        quartervals = (df['val'].iloc[inc_index][(df['start'] >= k_startdate) & #Within time period defined by 10-k 
-                                                            (df['end'] <= k_enddate) &
-                                                            ((df['end'] - df['start']) < dt.timedelta(200))]) #Exclude the 10-k vlaue
-        new_val = k_val - sum(quartervals)
-        df['val'].iloc[i] = new_val
-    return(df)
+def EDGAR_q4df(row, full_df):
+    if "K" in row['form']:
+        row_tag = row['tag']
+        row_year = row['fy']
+        k_val = row['val']
+        #print(quarterly_df[(quarterly_df['fy']==row_year) & (quarterly_df['tag']==row_tag & quarterly_df['form'].str.contains("q", case = False))])
+        q_vals = (full_df['val'][(full_df['fy']==row_year) & 
+                    (full_df['tag']==row_tag) & 
+                    (full_df['form'].str.contains("q", case = False)) 
+                    ]).sum()
+        
+        q4_val = k_val - q_vals
+        q4_row = row.copy()
+        q4_row['val']  = q4_val
+        q4_row['form'] = '10-Qd'
+        return(q4_row)
+    else:
+        return(row)

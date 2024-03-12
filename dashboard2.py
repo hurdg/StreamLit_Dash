@@ -9,7 +9,7 @@ import altair as alt
 import datetime as dt
 import yfinance as yf
 
-from EDGAR_functions import EDGAR_query, EDGAR_gettag, EDGAR_getq4
+from EDGAR_functions import EDGAR_query, EDGAR_gettag, EDGAR_q4df
 from inventory_plot import create_inventory_chart
 
 st.set_page_config(
@@ -40,28 +40,28 @@ with row[1]:
 #Load data of selected company
 df = EDGAR_query(cik_str, header = header)
 
+#Clean up df
+df[["start", 'end']] = df[["start", 'end']].apply(pd.to_datetime, errors='coerce', utc=False)
+cleaned_df = df[(df['frame'].notna()) & 
+                  (df['start'].notna()) &
+                  (df['frame'].notnull())
+                  ]
+cleaned_df.sort_values(['tag', 'end', 'start'], inplace = True) 
+cleaned_df.reset_index(inplace = True)
+cleaned_df.drop(columns = ['index'], inplace = True)
 
+#Create 4th quarter df
+quarterly_df = cleaned_df.apply(EDGAR_q4df, full_df = cleaned_df, axis=1)
+
+#Subset by desired data
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
-#Function in edgar_functions file
 raw_tag = EDGAR_gettag('rawmaterials', df['tag'])
 wip_tag = EDGAR_gettag('workinprocess', df['tag'])
 fin_tag = EDGAR_gettag('FinishedGoods', df['tag'])
 inc_tag = EDGAR_gettag('netincome', df['tag'])
 
-
-#Clean up df
-df[["start", 'end']] = df[["start", 'end']].apply(pd.to_datetime, errors='coerce', utc=False)
-df = df[df['frame'].notna() & df['frame'].notnull()]
-df.sort_values(by='end', inplace = True) 
-df.reset_index(inplace = True)
-
-#Subset by desired data
-df_inventory = df[df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start','end','val','tag', 'frame']]
+df_inventory = quarterly_df[quarterly_df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start','end','val','tag', 'frame']]
 df_inventory.reset_index(inplace = True)
-
-#Calculate 4th quarter data
-df_inventory = EDGAR_getq4(df_inventory, inc_tag)
-
 
 # get historical stock price data
 df_hist = yf.Ticker(selected_ticker)
@@ -111,6 +111,8 @@ def flatten(xss):
 
 pe_df = pd.DataFrame({'date' : flatten(date_list),
               'pe' : flatten(pe_list)})
+
+
 
 
 with row[0]:

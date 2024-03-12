@@ -1,26 +1,15 @@
 import plotly.graph_objects as go
 import plotly.subplots as pls
 
-#Create variables for whatever tag name is used to describe raw, workinprocess, and finished
-def get_inventory_tags(tags:list=None):
-    raw_tags = tags[tags.str.contains('rawmaterials', case = False)].unique()
-    raw_tag = min(raw_tags, key=len)
-
-    wip_tags = tags[tags.str.contains('workinprocess', case = False)].unique()
-    wip_tag = min(wip_tags, key=len)
-
-    fin_tags = tags[tags.str.contains('FinishedGoods', case = False)].unique()
-    fin_tag = min(fin_tags, key=len)
-
-    inc_tags = tags[tags.str.contains('netincome', case = False)].unique()
-    inc_tag = min(inc_tags, key=len)
-    return(raw_tag, wip_tag, fin_tag, inc_tag)
-
+from EDGAR_functions import EDGAR_gettag
 
 
 #Create Inventory Chart
 def create_inventory_chart(inventory_df, historical_df):
-    raw_tag, wip_tag, fin_tag, inc_tag = get_inventory_tags(inventory_df['tag'])
+    raw_tag = EDGAR_gettag('rawmaterials', inventory_df['tag'])
+    wip_tag = EDGAR_gettag('workinprocess', inventory_df['tag'])
+    fin_tag = EDGAR_gettag('FinishedGoods', inventory_df['tag'])
+    inc_tag = EDGAR_gettag('netincome', inventory_df['tag'])
 
     
     fig = go.Figure()
