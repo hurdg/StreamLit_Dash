@@ -5,13 +5,13 @@ from EDGAR_functions import EDGAR_gettag
 
 
 #Create Inventory Chart
-def create_inventory_chart(inventory_df, historical_df):
+def create_inventory_chart(inventory_df, quarterly_df, historical_df):
     raw_tag = EDGAR_gettag('rawmaterials', inventory_df['tag'])
     wip_tag = EDGAR_gettag('workinprocess', inventory_df['tag'])
     fin_tag = EDGAR_gettag('FinishedGoods', inventory_df['tag'])
-    inc_tag = EDGAR_gettag('netincome', inventory_df['tag'])
+    inc_tag = EDGAR_gettag('netincome', quarterly_df['tag'])
 
-    
+
     fig = go.Figure()
     fig = pls.make_subplots(rows=1, cols=1,
                             specs=[[{"secondary_y": True}]])
@@ -53,8 +53,8 @@ def create_inventory_chart(inventory_df, historical_df):
     ), row=1, col=1, secondary_y=False)
 
     fig.add_trace(go.Line(
-        x = inventory_df['end'][inventory_df['tag']=='NetIncomeLoss'],
-        y = inventory_df['val'][inventory_df['tag']=='NetIncomeLoss']/10,
+        x = inventory_df['end'][quarterly_df['tag']==inc_tag],
+        y = inventory_df['val'][quarterly_df['tag']==inc_tag]/10,
         #legendgroup="group", 
         #legendgrouptitle_text="method one",
         marker=dict(color='darkblue'),

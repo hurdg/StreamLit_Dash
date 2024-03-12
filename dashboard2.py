@@ -40,35 +40,36 @@ with row[1]:
 #Load data of selected company
 df = EDGAR_query(cik_str, header = header)
 
-#Clean up df
+#Prep df and create quarterly
 df[["start", 'end']] = df[["start", 'end']].apply(pd.to_datetime, errors='coerce', utc=False)
-cleaned_df = df[(df['frame'].notna()) & 
+
+quarter_prep_df = df[(df['frame'].notna()) & 
                   (df['start'].notna()) &
                   (df['frame'].notnull())
                   ]
-cleaned_df.sort_values(['tag', 'end', 'start'], inplace = True) 
-cleaned_df.reset_index(inplace = True)
-cleaned_df.drop(columns = ['index'], inplace = True)
+quarter_prep_df.sort_values(['tag', 'end', 'start'], inplace = True) 
+quarter_prep_df.reset_index(inplace = True)
+quarter_prep_df.drop(columns = ['index'], inplace = True)
 
 #Create 4th quarter df
-quarterly_df = cleaned_df.apply(EDGAR_q4df, full_df = cleaned_df, axis=1)
+quarterly_df = quarter_prep_df.apply(EDGAR_q4df, full_df = quarter_prep_df, axis=1)
 
 #Subset by desired data
 #Create variables for whatever tag name is used to describe raw, workinprocess, and finished
 raw_tag = EDGAR_gettag('rawmaterials', df['tag'])
 wip_tag = EDGAR_gettag('workinprocess', df['tag'])
 fin_tag = EDGAR_gettag('FinishedGoods', df['tag'])
-inc_tag = EDGAR_gettag('netincome', df['tag'])
+inc_tag = EDGAR_gettag('netincome', quarterly_df['tag'])
 
-df_inventory = quarterly_df[quarterly_df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start','end','val','tag', 'frame']]
+df_inventory = df[df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start','end','val','tag', 'frame']]
 df_inventory.reset_index(inplace = True)
 
 # get historical stock price data
-df_hist = yf.Ticker(selected_ticker)
+df_hist = yf.Ticker('UG')
 hist = df_hist.history(period="max")
 hist.reset_index(inplace = True)
 hist["Date"] = hist["Date"].dt.tz_localize(tz = None)
-hist = hist[hist["Date"] > (min(df_inventory['start']))]
+hist = hist[hist["Date"] > (min(quarterly_df['start']))]
 
 #Split dashboard into two columns
 row = st.columns((1, 4), gap='medium')
@@ -77,13 +78,13 @@ row = st.columns((1, 4), gap='medium')
 with row[1]:
     #Create Figure
     #######################
-    fig = create_inventory_chart(df_inventory, hist)
+    fig = create_inventory_chart(df_inventory, quarterly_df,  hist)
     st.plotly_chart(fig, use_container_width=True)
 
 ###############################################
-newest_annual_dates = pd.Series.nlargest((df['end'][df['tag']==inc_tag]),4)
-newest_profit = df['val'][(df['tag']==inc_tag) & (df['end'].isin(newest_annual_dates))]
-newest_sharesoutstanding = df['val'][(df['tag']=='CommonStockSharesOutstanding') & (df['end']== max(newest_annual_dates))]
+newest_annual_dates = pd.Series.nlargest((quarterly_df['end'][quarterly_df['tag']==inc_tag]),4)
+newest_profit = quarterly_df['val'][(quarterly_df['tag']==inc_tag) & (quarterly_df['end'].isin(newest_annual_dates))]
+newest_sharesoutstanding = quarterly_df['val'][(quarterly_df['tag']=='CommonStockSharesOutstanding') & (quarterly_df['end']== max(newest_annual_dates))]
 newest_profitpershare = newest_profit.sum()/newest_sharesoutstanding.mean()
 newest_price = hist['Close'][hist["Date"]==max(hist["Date"])]
 pe = round((newest_price/newest_profitpershare).mean(),2)
