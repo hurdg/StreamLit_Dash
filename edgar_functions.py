@@ -2,6 +2,7 @@ import pandas as pd
 import requests
 import streamlit as st
 import datetime as dt
+import re
 
 #Download data from API
 @st.cache_data  # 👈 Add the caching decorator
@@ -49,7 +50,7 @@ def EDGAR_gettag(tag:str, tags:list=None):
 def EDGAR_q4df(row, full_df):
     if "K" in row['form']:
         row_tag = row['tag']
-        row_year = row['fy']
+        row_year = re.search(r'\d+', row['frame'])
         k_val = row['val']
         #print(quarterly_df[(quarterly_df['fy']==row_year) & (quarterly_df['tag']==row_tag & quarterly_df['form'].str.contains("q", case = False))])
         q_vals = (full_df['val'][(full_df['fy']==row_year) & 
