@@ -63,7 +63,7 @@ inc_tag = EDGAR_gettag('netincome', quarterly_df['tag'])
 
 df_inventory = df[df['tag'].isin([raw_tag, wip_tag, fin_tag, inc_tag])][['start','end','val','tag', 'frame']]
 df_inventory.reset_index(inplace = True)
-
+##Changes
 # get historical stock price data
 df_hist = yf.Ticker('UG')
 hist = df_hist.history(period="max")
