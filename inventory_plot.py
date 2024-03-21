@@ -16,13 +16,14 @@ def create_inventory_chart(inventory_df, quarterly_df, historical_df):
     fig = pls.make_subplots(rows=1, cols=1,
                             specs=[[{"secondary_y": True}]])
 
-    fig.add_trace(go.Line(
+    fig.add_trace(go.Scatter(
         x = historical_df['Date'],
         y = historical_df['Close'],
         #legendgroup="group", 
         #legendgrouptitle_text="method one",
         line=dict(color='white', width = 0.1),
-        name="Stock Price"
+        name="Stock Price",
+        mode='lines'
     ), row=1, col=1, secondary_y=True)
 
     fig.add_trace(go.Bar(
@@ -52,13 +53,14 @@ def create_inventory_chart(inventory_df, quarterly_df, historical_df):
         name="Finished Goods"
     ), row=1, col=1, secondary_y=False)
 
-    fig.add_trace(go.Line(
-        x = inventory_df['end'][quarterly_df['tag']==inc_tag],
-        y = inventory_df['val'][quarterly_df['tag']==inc_tag]/10,
+    fig.add_trace(go.Scatter(
+        x = quarterly_df['end'][quarterly_df['tag']==inc_tag],
+        y = quarterly_df['val'][quarterly_df['tag']==inc_tag],
         #legendgroup="group", 
         #legendgrouptitle_text="method one",
         marker=dict(color='darkblue'),
-        name="Net Income"
+        name="Net Income",
+        mode='lines'
     ), row=1, col=1, secondary_y=False)
 
     fig.update_layout(barmode='group', margin={"r": 0, "t": 0, "l": 0, "b": 0}, 

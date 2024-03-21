@@ -50,14 +50,11 @@ def EDGAR_gettag(tag:str, tags:list=None):
 def EDGAR_q4df(row, full_df):
     if "K" in row['form']:
         row_tag = row['tag']
-        row_year = re.search(r'\d+', row['frame'])
+        row_year = re.search(r'\d+', row['frame'])[0]
         k_val = row['val']
-        #print(quarterly_df[(quarterly_df['fy']==row_year) & (quarterly_df['tag']==row_tag & quarterly_df['form'].str.contains("q", case = False))])
-        q_vals = (full_df['val'][(full_df['fy']==row_year) & 
-                    (full_df['tag']==row_tag) & 
-                    (full_df['form'].str.contains("q", case = False)) 
-                    ]).sum()
-        
+        q_vals = full_df['val'][(full_df['frame'].str.contains(row_year)) &
+                                (full_df['tag'] == row_tag) &
+                                (full_df['form'].str.contains('q', case = False))].sum()
         q4_val = k_val - q_vals
         q4_row = row.copy()
         q4_row['val']  = q4_val
