@@ -25,10 +25,10 @@ def trailing_pe_plot(newest_price, trailing_eps, trailing_pe, pe_df):
     ), row=2, col=1)
 
     fig.update_layout(
-        title_text="Trailing PE",
+        title_text="PE",
         showlegend=False,
         margin={"r": 0, "t": 0, "l": 0, "b": 0}, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True)
-    
+    fig.update_yaxes(title_text="PE Ratio", row=2, col=1)
     return(fig)
 
 @st.cache_data
@@ -54,8 +54,8 @@ def forward_pe_plot(newest_price:float, forward_eps:float, forward_pe, pe_df):
     ), row=2, col=1)
 
     fig.update_layout(
-        title_text="Forward PE",
+        title_text="PE Ratio",
         showlegend=False,
         margin={"r": 0, "t": 0, "l": 0, "b": 0}, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', autosize = True)
-    
+    fig.update_yaxes(title_text="PE Ratio", row=2, col=1)
     return(fig)
