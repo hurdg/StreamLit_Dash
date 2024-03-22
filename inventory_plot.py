@@ -5,11 +5,11 @@ from EDGAR_functions import EDGAR_gettag
 
 
 #Create Inventory Chart
-def create_inventory_chart(inventory_df, quarterly_df, historical_df):
-    raw_tag = EDGAR_gettag('rawmaterials', inventory_df['tag'])
-    wip_tag = EDGAR_gettag('workinprocess', inventory_df['tag'])
-    fin_tag = EDGAR_gettag('FinishedGoods', inventory_df['tag'])
-    inc_tag = EDGAR_gettag('netincome', quarterly_df['tag'])
+def create_inventory_chart(balance_sheet, income_statement, historical_df):
+    raw_tag = EDGAR_gettag('rawmaterials', balance_sheet['tag'])
+    wip_tag = EDGAR_gettag('workinprocess', balance_sheet['tag'])
+    fin_tag = EDGAR_gettag('FinishedGoods', balance_sheet['tag'])
+    inc_tag = EDGAR_gettag('netincome', income_statement['tag'])
 
 
     fig = go.Figure()
@@ -27,8 +27,8 @@ def create_inventory_chart(inventory_df, quarterly_df, historical_df):
     ), row=1, col=1, secondary_y=True)
 
     fig.add_trace(go.Bar(
-        x = inventory_df['end'][inventory_df['tag']==raw_tag],
-        y = inventory_df['val'][inventory_df['tag']==raw_tag],
+        x = balance_sheet['end'][balance_sheet['tag']==raw_tag],
+        y = balance_sheet['val'][balance_sheet['tag']==raw_tag],
         #legendgroup="group",
         marker=dict(color='forestgreen'),
         #legendgrouptitle_text="method one",
@@ -36,8 +36,8 @@ def create_inventory_chart(inventory_df, quarterly_df, historical_df):
     ), row=1, col=1, secondary_y=False)
 
     fig.add_trace(go.Bar(
-        x = inventory_df['end'][inventory_df['tag']==wip_tag],
-        y = inventory_df['val'][inventory_df['tag']==wip_tag],
+        x = balance_sheet['end'][balance_sheet['tag']==wip_tag],
+        y = balance_sheet['val'][balance_sheet['tag']==wip_tag],
         #legendgroup="group", 
         #legendgrouptitle_text="method one",
         marker=dict(color='goldenrod'),
@@ -45,8 +45,8 @@ def create_inventory_chart(inventory_df, quarterly_df, historical_df):
     ), row=1, col=1, secondary_y=False)
 
     fig.add_trace(go.Bar(
-        x = inventory_df['end'][inventory_df['tag']==fin_tag],
-        y = inventory_df['val'][inventory_df['tag']==fin_tag],
+        x = balance_sheet['end'][balance_sheet['tag']==fin_tag],
+        y = balance_sheet['val'][balance_sheet['tag']==fin_tag],
         #legendgroup="group", 
         #legendgrouptitle_text="method one",
         marker=dict(color='darkred'),
@@ -54,8 +54,8 @@ def create_inventory_chart(inventory_df, quarterly_df, historical_df):
     ), row=1, col=1, secondary_y=False)
 
     fig.add_trace(go.Scatter(
-        x = quarterly_df['end'][quarterly_df['tag']==inc_tag],
-        y = quarterly_df['val'][quarterly_df['tag']==inc_tag],
+        x = income_statement['end'][income_statement['tag']==inc_tag],
+        y = income_statement['val'][income_statement['tag']==inc_tag],
         #legendgroup="group", 
         #legendgrouptitle_text="method one",
         marker=dict(color='darkblue'),
