@@ -12,14 +12,14 @@ def trailing_pe_plot(newest_price, trailing_eps, trailing_pe, pe_df):
     fig.add_trace(go.Pie(labels=labels, values=values, title=f"P/E <br> <b>{trailing_pe}</b>", 
                         title_font=dict(size=20, color = "white", family='Arial, sans-serif'),
                         hole=.4, hoverinfo="label+value+name",
-                        marker=dict(colors=['darkred', 'red'], line=dict(color='#000000', width=2))), 
+                        marker=dict(colors=['darkgreen', 'green'], line=dict(color='#000000', width=2))), 
                     row=1, col=1) 
 
 
     fig.add_trace(go.Scatter(
         x = pe_df['date'],
         y = pe_df['pe'],
-        marker=dict(color='green'),
+        marker=dict(color='grey'),
         name="Net Income",
         mode = 'lines'
     ), row=2, col=1)
@@ -48,7 +48,7 @@ def forward_pe_plot(newest_price:float, forward_eps:float, forward_pe, pe_df):
     fig.add_trace(go.Scatter(
         x = pe_df['date'],
         y = pe_df['pe'],
-        marker=dict(color='red'),
+        marker=dict(color='grey'),
         name="Net Income",
         mode = 'lines'
     ), row=2, col=1)
