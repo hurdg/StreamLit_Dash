@@ -1,9 +1,11 @@
 import plotly.graph_objects as go
 import plotly.subplots as pls
+import streamlit as st
 
-def trailing_pe(newest_price, trailing_eps, pe_df):
+@st.cache_data
+def trailing_pe_plot(newest_price, trailing_eps, trailing_pe, pe_df):
     labels = ["Price per Share", "Earnings per Share"]
-    values = [round(newest_price,2), round(trailing_eps,2)]
+    values = [newest_price, trailing_eps]
 
     # Create subplots: use 'domain' type for Pie subplot
     fig = pls.make_subplots(rows=2, cols=1, specs=[[{'type':'domain'}],[{'type':'xy'}]], row_width=[0.7, 0.3])
@@ -29,13 +31,14 @@ def trailing_pe(newest_price, trailing_eps, pe_df):
     
     return(fig)
 
-def forward_pe(newest_price, forward_eps, pe_df):
+@st.cache_data
+def forward_pe_plot(newest_price:float, forward_eps:float, forward_pe, pe_df):
     labels = ["Price per Share", "Earnings per Share"]
     values = [round(newest_price,2), round(forward_eps,2)]
 
     # Create subplots: use 'domain' type for Pie subplot
     fig = pls.make_subplots(rows=2, cols=1, specs=[[{'type':'domain'}],[{'type':'xy'}]], row_width=[0.7, 0.3])
-    fig.add_trace(go.Pie(labels=labels, values=values, title=f"P/E <br> <b>{trailing_pe}</b>", 
+    fig.add_trace(go.Pie(labels=labels, values=values, title=f"P/E <br> <b>{forward_pe}</b>", 
                         title_font=dict(size=20, color = "white", family='Arial, sans-serif'),
                         hole=.4, hoverinfo="label+value+name",
                         marker=dict(colors=['darkred', 'red'], line=dict(color='#000000', width=2))), 

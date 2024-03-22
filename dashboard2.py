@@ -11,7 +11,7 @@ import yfinance as yf
 
 from EDGAR_functions import EDGAR_query, EDGAR_gettag, EDGAR_q4df
 from inventory_plot import create_inventory_chart
-from pe_plot import trailing_pe, forward_pe
+from pe_plot import trailing_pe_plot, forward_pe_plot
 
 #################################################################################################################################
 ##################################### Page Configuration ########################################################################
@@ -98,17 +98,14 @@ trailing_pe = round((newest_price/trailing_eps),2)
 forward_pe = round((newest_price/forward_eps),2)
 ###############################################
 
-
+###############################################
 inc_date_df = quarterly_income_statement[['end', 'val']][quarterly_income_statement['tag']==inc_tag]
 pe_list = []
 date_list = []
-
 sharesoutstanding_tag = EDGAR_gettag('sharesoutstanding', balance_sheet['tag'])
 
 for i in range(4,len(inc_date_df)):
     annualized_earning = inc_date_df.iloc[i-4:i]['val'].sum()
-    
-
     shares_outstanding = balance_sheet['val'][(balance_sheet['tag']==sharesoutstanding_tag) &
                                               (balance_sheet['end']==inc_date_df.iloc[i]['end'])].mean()
     eps = annualized_earning/shares_outstanding
@@ -117,9 +114,8 @@ for i in range(4,len(inc_date_df)):
     pe = round((price/eps).mean(),2)
     pe_list.append(pe)
     date_list.append(inc_date_df.iloc[i]['end'])
-
 pe_df = pd.DataFrame({'date' : date_list,'pe' : pe_list})
-
+###############################################
 
 #Split tab into two columns
 with tab1:
@@ -131,19 +127,9 @@ with tab1:
         st.plotly_chart(fig, use_container_width = True)
 
     with row[0]:
-        trailing = st.button("Trailing PE")
-        forward = st.button("Forward PE")
-        if trailing:
-            fig = trailing_pe(newest_price, trailing_eps, pe_df)
-            st.plotly_chart(fig, use_container_width=True)
-        elif forward:
-            fig = forward_pe(newest_price, trailing_eps, pe_df)
-            st.plotly_chart(fig, use_container_width=True)
-
-
- #       on = st.toggle('Forward PE')
- #       if on:
- #           fig = trailing_pe(newest_price, trailing_eps, pe_df)
- #           st.plotly_chart(fig, use_container_width=True)
-
+        fig = trailing_pe_plot(newest_price, trailing_eps, trailing_pe, pe_df)
+        on = st.toggle('Forward PE')
+        if on:
+            fig = forward_pe_plot(newest_price, forward_eps, forward_pe, pe_df)
+        st.plotly_chart(fig, use_container_width=True)
 #######################
